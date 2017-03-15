@@ -17,30 +17,49 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
     var flyNodeList : [SKSpriteNode] = []
     let PLAYER_MAGIN_BOTTOM : CGFloat = 20
     let SCREEN_MAGIN : CGFloat = 20
-    var enemyNodes : [SKSpriteNode]?
     var playerBullets : [SKSpriteNode] = []
     let PLAYER_BULLET_NAME = "Player Bullet"
-    
     let PLAYER_MASK = 1
     let ENEMY_MASK = 2
     let ENEMY_BULLET_MASK = 4
     let PLAYER_BULLET_MASK = 8
+    //sound & texture (am thanh + hinh anh)
+    let playerShootSoundAction = SKAction.playSoundFileNamed("player-shoot", waitForCompletion: false)
+    let playerExplodeSoundAction = SKAction.playSoundFileNamed("player-explosion", waitForCompletion: false)
+    let flyTexture : [SKTexture] = [SKTexture.init(imageNamed: "fly-1-1" ), SKTexture.init(imageNamed: "fly-1-2" )]
     
+    let explosionLV1Texture : [SKTexture] = [
+        SKTexture.init(imageNamed: "explosion-1-0" ),
+        SKTexture.init(imageNamed: "explosion-1-1" ),
+        SKTexture.init(imageNamed: "explosion-1-2" ),
+        SKTexture.init(imageNamed: "explosion-1-3" )]
     
+    let explosionPlayerTexture : [SKTexture] = [
+        SKTexture.init(imageNamed: "explosion-2-0" ),
+        SKTexture.init(imageNamed: "explosion-2-1" ),
+        SKTexture.init(imageNamed: "explosion-2-2" ),
+        SKTexture.init(imageNamed: "explosion-2-3" )]
+    
+    let starFieldNode = SKEmitterNode(fileNamed: "StarField")
     
     var startTime : TimeInterval = -100
     
-
-    
     override func didMove(to view: SKView) {
-        
-        
-        
         anchorPoint = CGPoint(x:0 , y:0)
-        
         addPlayer()
-        
         addEnemyRow(flyY: self.size.height - SCREEN_MAGIN, spaceY: 0.0)
+        addStarField()
+    }
+    
+    func addStarField() -> Void {
+        if let starFieldNode = SKEmitterNode(fileNamed: "StarField")
+        {
+            starFieldNode.position = CGPoint(x : self.size.width/2 ,  y : self.size.height)
+            starFieldNode.zPosition = -100
+            starFieldNode.particlePositionRange = CGVector(dx: self.size.width, dy: self.size.height)
+            
+            addChild(starFieldNode)
+        }
     }
     
     func addPlayer()->Void{
@@ -51,7 +70,7 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
         playerNode.physicsBody?.linearDamping = 0
         playerNode.physicsBody?.categoryBitMask = UInt32(PLAYER_MASK)
         playerNode.physicsBody?.contactTestBitMask = UInt32(ENEMY_BULLET_MASK)
-
+        
         
         addChild(playerNode)
         configPhysic()
@@ -76,7 +95,10 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
             flyNode.physicsBody?.linearDamping = 0
             flyNode.physicsBody?.categoryBitMask = UInt32(ENEMY_MASK) //000010
             flyNode.physicsBody?.contactTestBitMask = UInt32(PLAYER_BULLET_MASK)
-
+            
+            let animatedAction : SKAction = .repeatForever(.animate(with: [flyTexture[0],flyTexture[1]], timePerFrame: 0.5))// moi 0.5 s chuyen anh 1 lan
+            flyNode.run(animatedAction)
+            
             addChild(flyNode)
             flyNodeList.append(flyNode)
         }
@@ -87,29 +109,83 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
         self.physicsWorld.contactDelegate = self  //khi nao xay ra va cham thi se gui den self (gamescene)
     }
     
+    func removeNodesFromList(nodeA : SKSpriteNode , nodeB: SKSpriteNode, listNeedRemoval: inout [SKSpriteNode]) -> Void {
+        if (listNeedRemoval.contains(nodeA))
+        {
+            listNeedRemoval = listNeedRemoval.filter {$0 != nodeA}
+        }else if (listNeedRemoval.contains(nodeB))
+        {
+            listNeedRemoval = listNeedRemoval.filter {$0 != nodeB}
+        }
+        
+    }
+    
+    func addExplosion(position : CGPoint, isEnemyExplosion: Bool) -> Void {
+        let explosion1st : String
+        let explosionAction : SKAction
+        
+        if isEnemyExplosion{
+            explosion1st = "explosion-1-0"
+            explosionAction = SKAction.animate(with: [
+                explosionLV1Texture[0],
+                explosionLV1Texture[1],
+                explosionLV1Texture[2],
+                explosionLV1Texture[3]], timePerFrame: 0.2)
+        }else{
+            explosion1st = "explosion-2-0"
+            explosionAction = SKAction.animate(with: [
+                explosionPlayerTexture[0],
+                explosionPlayerTexture[1],
+                explosionPlayerTexture[2],
+                explosionPlayerTexture[3]], timePerFrame: 0.2)
+        }
+        
+        let explosionNode = SKSpriteNode(imageNamed: explosion1st)
+        explosionNode.position = position
+        if isEnemyExplosion{
+            explosionNode.run(.sequence([playerExplodeSoundAction,explosionAction, .removeFromParent()]))
+        }
+        else{
+            explosionNode.run(.sequence([playerExplodeSoundAction,explosionAction, .removeFromParent()])){() -> Void in self.endGame()}
+        }
+        addChild(explosionNode)
+    }
+    
     //code va cham
     func didBegin(_ contact: SKPhysicsContact) {
         //ten 2 object va cham
         let bodyA = contact.bodyA
         let bodyB = contact.bodyB
         
-        let nodeA = bodyA.node
-        let nodeB = bodyB.node
+        guard let nodeA = bodyA.node , let nodeB = bodyB.node else {
+            return
+        }
+        
         
         //2 or 8 == 10 => neu ruoi va cham voi dan = 10 bit mask
         switch bodyA.categoryBitMask | bodyB.categoryBitMask {
         case 10://playerbullet + enemy
-            nodeA?.removeFromParent()
-            nodeB?.removeFromParent()
+            nodeA.removeFromParent()
+            nodeB.removeFromParent()
+            //remove fly
+            removeNodesFromList(nodeA: nodeA as! SKSpriteNode, nodeB: nodeB as! SKSpriteNode, listNeedRemoval: &flyNodeList)
+            //remove bullet
+            removeNodesFromList(nodeA: nodeA as! SKSpriteNode, nodeB: nodeB as! SKSpriteNode, listNeedRemoval: &playerBullets)
+            addExplosion(position: nodeA.position , isEnemyExplosion: true)
+            
         case 3: //player + enemy
-            nodeA?.removeFromParent()
-            nodeB?.removeFromParent()
+            nodeA.removeFromParent()
+            nodeB.removeFromParent()
         case 5://enemy bullet + player
-            nodeA?.removeFromParent()
-            nodeB?.removeFromParent()
+            nodeA.removeFromParent()
+            nodeB.removeFromParent()
+            addExplosion(position: nodeA.position , isEnemyExplosion: false)
+            
         case 12: //bullet + bullet
-            nodeA?.removeFromParent()
-            nodeB?.removeFromParent()
+            nodeA.removeFromParent()
+            nodeB.removeFromParent()
+            
+            removeNodesFromList(nodeA: nodeA as! SKSpriteNode, nodeB: nodeB as! SKSpriteNode, listNeedRemoval: &playerBullets)
         default:
             print("Unexpect event happend")
         }
@@ -157,12 +233,12 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
             enemyShoot(enemyNode: selectEnemy())
         }
         
-//        self.enumerateChildNodes(withName: PLAYER_BULLET_NAME) {
-//            node,pointer in
-//            if node.position.y > self.size.height {
-//                node.removeFromParent()
-//            }
-//        }
+        //        self.enumerateChildNodes(withName: PLAYER_BULLET_NAME) {
+        //            node,pointer in
+        //            if node.position.y > self.size.height {
+        //                node.removeFromParent()
+        //            }
+        //        }
         for playerBullet in self.playerBullets {
             if playerBullet.position.y > self.size.height {
                 playerBullet.removeFromParent()
@@ -184,10 +260,9 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
         enemyBullet.physicsBody = SKPhysicsBody(rectangleOf: enemyBullet.size)
         enemyBullet.physicsBody?.collisionBitMask = 0
         enemyBullet.physicsBody?.linearDamping = 0
-        enemyBullet.physicsBody?.velocity = CGVector(dx: playerNode.position.x, dy: -playerNode.position.y)
+        enemyBullet.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
         enemyBullet.physicsBody?.categoryBitMask = UInt32(ENEMY_BULLET_MASK) //tuong duong voi 1 co the khai bao la int dc 001
-        enemyBullet.physicsBody?.contactTestBitMask = UInt32(PLAYER_MASK) //2 o day la khai bao co the va cham voi categorybitmask 2
-
+        enemyBullet.physicsBody?.contactTestBitMask = UInt32(PLAYER_MASK | PLAYER_BULLET_MASK) //2 o day la khai bao co the va cham voi categorybitmask 2
         
         addChild(enemyBullet)
     }
@@ -203,13 +278,24 @@ class GameScene: SKScene , SKPhysicsContactDelegate {
         bulletNode.physicsBody?.linearDamping = 0 //luc can
         bulletNode.physicsBody?.velocity = CGVector(dx: 0, dy: 400)
         bulletNode.physicsBody?.categoryBitMask = UInt32(PLAYER_BULLET_MASK) //tuong duong voi 1 co the khai bao la int dc 001
-        bulletNode.physicsBody?.contactTestBitMask = UInt32(ENEMY_MASK) //2 o day la khai bao co the va cham voi categorybitmask 2
-            
+        bulletNode.physicsBody?.contactTestBitMask = UInt32(ENEMY_MASK | ENEMY_BULLET_MASK) //2 o day la khai bao co the va cham voi categorybitmask 2
+        bulletNode.run(playerShootSoundAction)
+        
         playerBullets.append(bulletNode)
         addChild(bulletNode)
     }
     
     func selectEnemy() -> SKSpriteNode{
+        if flyNodeList.count<1
+        {
+            addEnemyRow(flyY: self.size.height - SCREEN_MAGIN, spaceY: 0.0)
+        }
         return flyNodeList[Int(arc4random_uniform(UInt32(flyNodeList.count)))]
+    }
+    
+    func endGame(){
+        // restart the game
+        let gameScene = GameScene(size: self.size)
+        self.view!.presentScene(gameScene)
     }
 }
