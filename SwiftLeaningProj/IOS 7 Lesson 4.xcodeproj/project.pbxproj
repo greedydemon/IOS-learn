@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		840D1C261E7931C60059823B /* StarField.sks in Resources */ = {isa = PBXBuildFile; fileRef = 840D1C251E7931C60059823B /* StarField.sks */; };
 		843490601E6792F8004C9200 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8434905F1E6792F8004C9200 /* AppDelegate.swift */; };
 		843490621E6792F9004C9200 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = 843490611E6792F9004C9200 /* GameScene.sks */; };
 		843490641E6792F9004C9200 /* Actions.sks in Resources */ = {isa = PBXBuildFile; fileRef = 843490631E6792F9004C9200 /* Actions.sks */; };
@@ -19,6 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		840D1C251E7931C60059823B /* StarField.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = StarField.sks; sourceTree = "<group>"; };
 		8434905C1E6792F8004C9200 /* IOS 7 Lesson 4.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "IOS 7 Lesson 4.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8434905F1E6792F8004C9200 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		843490611E6792F9004C9200 /* GameScene.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = GameScene.sks; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 		8434905E1E6792F8004C9200 /* IOS 7 Lesson 4 */ = {
 			isa = PBXGroup;
 			children = (
+				840D1C251E7931C60059823B /* StarField.sks */,
 				8434905F1E6792F8004C9200 /* AppDelegate.swift */,
 				843490611E6792F9004C9200 /* GameScene.sks */,
 				843490631E6792F9004C9200 /* Actions.sks */,
@@ -139,6 +142,7 @@
 				843490621E6792F9004C9200 /* GameScene.sks in Resources */,
 				84EA587A1E6AEB9800FB33FB /* GalagaResource.xcassets in Resources */,
 				8434906D1E6792F9004C9200 /* Assets.xcassets in Resources */,
+				840D1C261E7931C60059823B /* StarField.sks in Resources */,
 				843490701E6792F9004C9200 /* LaunchScreen.storyboard in Resources */,
 				843490641E6792F9004C9200 /* Actions.sks in Resources */,
 			);
